@@ -1,0 +1,11 @@
+# Unreal Generated
+
+Binaries/
+Build/
+Intermediate/
+Saved/
+DerivedDataCache/
+
+# VS Generated
+
+*.VC.db
