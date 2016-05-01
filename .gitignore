@@ -9,3 +9,5 @@ DerivedDataCache/
 # VS Generated
 
 *.VC.db
+*.VC.opendb
+*.sdf

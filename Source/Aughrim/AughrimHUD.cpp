@@ -11,12 +11,18 @@ AAughrimHUD::AAughrimHUD()
 	// Set the crosshair texture
 	static ConstructorHelpers::FObjectFinder<UTexture2D> CrosshiarTexObj(TEXT("/Game/FirstPerson/Textures/FirstPersonCrosshair"));
 	CrosshairTex = CrosshiarTexObj.Object;
+
+	// Hide HUD by default
+	hideHUD = true;
 }
 
 
 void AAughrimHUD::DrawHUD()
 {
 	Super::DrawHUD();
+
+	// Skip draw if the HUD is hidden
+	if (hideHUD) { return; }
 
 	// Draw very simple crosshair
 
