@@ -6,6 +6,8 @@ public class Aughrim : ModuleRules
 {
 	public Aughrim(TargetInfo Target)
 	{
-		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore" });
+		PublicDependencyModuleNames.AddRange(new string[] { "Core", "CoreUObject", "Engine", "InputCore", "OnlineSubsystem", "OnlineSubsystemUtils" });
+
+		DynamicallyLoadedModuleNames.Add("OnlineSubsystemNull");
 	}
 }
