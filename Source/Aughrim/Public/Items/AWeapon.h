@@ -3,8 +3,8 @@
 #pragma once
 
 #include "GameFramework/Actor.h"
-#include "AWeapon.generated.h"
 #include "ACharacter.h"
+#include "AWeapon.generated.h"
 
 UENUM()
 enum class EWeaponState
@@ -15,7 +15,7 @@ enum class EWeaponState
 	Reloading
 };
 
-UCLASS()
+UCLASS(ABSTRACT, Blueprintable)
 class AUGHRIM_API AAWeapon : public AActor
 {
 	GENERATED_BODY()
