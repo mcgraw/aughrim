@@ -30,7 +30,7 @@ class AUGHRIM_API AAHUD : public AHUD
 
 public:
 
-	UPROPERTY(BlueprintReadWrite, Category = "HUD")
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "HUD")
 	FCanvasIcon CenterDotIcon;
 
 	UFUNCTION(BlueprintCallable, Category = "HUD")

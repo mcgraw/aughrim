@@ -2,7 +2,7 @@
 
 #include "Aughrim.h"
 #include "AHUD.h"
-
+#include "ACharacter.h"
 
 AAHUD::AAHUD(const class FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -13,11 +13,34 @@ AAHUD::AAHUD(const class FObjectInitializer& ObjectInitializer)
 void AAHUD::DrawHUD()
 {
 	Super::DrawHUD();
+
+	DrawCenterDot();
 }
 
 void AAHUD::DrawCenterDot()
 {
+	if (CenterDotIcon.Texture)
+	{
+		float CenterX = Canvas->ClipX / 2;
+		float CenterY = Canvas->ClipY / 2;
+		float CenterDotScale = 0.07f;
 
+		UE_LOG(LogTemp, Warning, TEXT("Character: %s"), *GetOwningPawn()->GetClass()->GetName());
+
+		AACharacter* Pawn = Cast<AACharacter>(GetOwningPawn());
+		if (Pawn)
+		{
+			// Boost size when hovering over a usable object
+
+			Canvas->SetDrawColor(255, 255, 255, 255);
+			Canvas->DrawIcon(CenterDotIcon,
+				CenterX - CenterDotIcon.UL * CenterDotScale / 2.0f,
+				CenterY - CenterDotIcon.VL * CenterDotScale / 2.0f,
+				CenterDotScale);
+
+			UE_LOG(LogTemp, Warning, TEXT("Draw Icon"));
+		}
+	}
 }
 
 EHUDState AAHUD::GetCurrentState()
