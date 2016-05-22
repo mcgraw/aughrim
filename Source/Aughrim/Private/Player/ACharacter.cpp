@@ -2,11 +2,45 @@
 
 #include "Aughrim.h"
 #include "ACharacter.h"
+#include "ACarryObjectComponent.h"
 
 AACharacter::AACharacter(const class FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
 {
 	PrimaryActorTick.bCanEverTick = true;
+
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	// Adjust jump to make it less floaty
+	MoveComp->GravityScale = 1.5f;
+	MoveComp->JumpZVelocity = 620;
+	MoveComp->bCanWalkOffLedgesWhenCrouching = true;
+	MoveComp->MaxWalkSpeedCrouched = 200;
+
+	// Ignore this channel or it will absorb the trace impacts instead of the skeletal mesh
+	GetCapsuleComponent()->SetCollisionResponseToChannel(COLLISION_WEAPON, ECR_Ignore);
+
+	// Enable crouching
+	MoveComp->GetNavAgentPropertiesRef().bCanCrouch = true;
+
+	CameraBoomComp = ObjectInitializer.CreateDefaultSubobject<USpringArmComponent>(this, TEXT("CameraBoom"));
+	CameraBoomComp->SocketOffset = FVector(0, 35, 0);
+	CameraBoomComp->TargetOffset = FVector(0, 0, 55);
+	CameraBoomComp->bUsePawnControlRotation = true;
+	CameraBoomComp->AttachParent = GetRootComponent();
+
+	CameraComp = ObjectInitializer.CreateDefaultSubobject<UCameraComponent>(this, TEXT("Camera"));
+	CameraComp->AttachParent = CameraBoomComp;
+
+	CarriedObjectComp = ObjectInitializer.CreateDefaultSubobject<UACarryObjectComponent>(this, TEXT("CarriedObjectComp"));
+	CarriedObjectComp->AttachParent = GetRootComponent();
+
+	TargetingSpeedModifier = 0.5f;
+	SprintingSpeedModifier = 2.5f;
+
+	Health = 100;
+
+	/* Names as specified in the character skeleton */
+	WeaponAttachPoint = TEXT("WeaponSocket");
 }
 
 void AACharacter::BeginPlay()
@@ -22,6 +56,30 @@ void AACharacter::Tick(float DeltaTime)
 void AACharacter::SetupPlayerInputComponent(class UInputComponent* InputComponent)
 {
 	Super::SetupPlayerInputComponent(InputComponent);
+
+	// Movement
+	InputComponent->BindAxis("MoveForward", this, &AACharacter::MoveForward);
+	InputComponent->BindAxis("MoveRight", this, &AACharacter::MoveRight);
+	InputComponent->BindAxis("Turn", this, &APawn::AddControllerYawInput);
+	InputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
+
+	// Sprint
+	InputComponent->BindAction("SprintHold", IE_Pressed, this, &AACharacter::OnStartSprinting);
+	InputComponent->BindAction("SprintHold", IE_Released, this, &AACharacter::OnStopSprinting);
+
+	// Crouch
+	// InputComponent->BindAction("CrouchToggle", IE_Released, this, &AACharacter::OnCrouchToggle);
+
+	// Jump
+	InputComponent->BindAction("Jump", IE_Pressed, this, &AACharacter::OnStartJump);
+	InputComponent->BindAction("Jump", IE_Released, this, &AACharacter::OnStopJump);
+
+	// Weapons
+	InputComponent->BindAction("Fire", IE_Pressed, this, &AACharacter::OnStartFire);
+	InputComponent->BindAction("Fire", IE_Released, this, &AACharacter::OnStopFire);
+
+	InputComponent->BindAction("Reload", IE_Pressed, this, &AACharacter::OnReload);
+
 }
 
 void AACharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -38,7 +96,7 @@ void AACharacter::MoveForward(float Val)
 {
 	if (Controller && Val != 0.f)
 	{
-		const FRotator Rotation = GetActorRotation();
+		const FRotator Rotation = Controller->GetControlRotation();
 		const FVector Direction = FRotationMatrix(Rotation).GetScaledAxis(EAxis::X);
 		AddMovementInput(Direction, Val);
 	}
