@@ -24,9 +24,7 @@ void AAHUD::DrawCenterDot()
 		float CenterX = Canvas->ClipX / 2;
 		float CenterY = Canvas->ClipY / 2;
 		float CenterDotScale = 0.07f;
-
-		UE_LOG(LogTemp, Warning, TEXT("Character: %s"), *GetOwningPawn()->GetClass()->GetName());
-
+		
 		AACharacter* Pawn = Cast<AACharacter>(GetOwningPawn());
 		if (Pawn)
 		{
@@ -37,8 +35,6 @@ void AAHUD::DrawCenterDot()
 				CenterX - CenterDotIcon.UL * CenterDotScale / 2.0f,
 				CenterY - CenterDotIcon.VL * CenterDotScale / 2.0f,
 				CenterDotScale);
-
-			UE_LOG(LogTemp, Warning, TEXT("Draw Icon"));
 		}
 	}
 }
