@@ -3,6 +3,7 @@
 #include "Aughrim.h"
 #include "ABattleArenaGameMode.h"
 
+DEFINE_LOG_CATEGORY_STATIC(LogGameMode, Log, All);
 
 AABattleArenaGameMode::AABattleArenaGameMode(const class FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -23,4 +24,6 @@ void AABattleArenaGameMode::FinishMatch()
 void AABattleArenaGameMode::RestartPlayer(class AController* NewPlayer)
 {
 	Super::RestartPlayer(NewPlayer);
+
+	UE_LOG(LogGameMode, Warning, TEXT("Hello"));
 }

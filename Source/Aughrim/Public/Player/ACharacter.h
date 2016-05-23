@@ -3,6 +3,7 @@
 #pragma once
 
 #include "Player/ABaseCharacter.h"
+#include "ATypes.h"
 #include "ACharacter.generated.h"
 
 UCLASS()
@@ -105,7 +106,34 @@ private:
 
 public:
 
-	//UFUNCTION(BlueprintCallable, Category = "Weapon")
-	//AAWeapon* GetCurrentWeapon() const;
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	AAWeapon* GetCurrentWeapon() const;
 
+	bool WeaponSlotAvailable(EInventorySlot CheckSlot);
+
+	bool CanFire() const;
+	bool CanReload() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Weapon")
+	bool IsFiring() const;
+
+	FName GetInventoryAttachPoint(EInventorySlot Slot) const;
+
+	/* All weapons/items the player currently holds */
+	TArray<AAWeapon*> Inventory;
+
+	void SetCurrentWeapon(class AAWeapon* NewWeapon, class AAWeapon* LastWeapon = nullptr);
+
+	void EquipWeapon(AAWeapon* Weapon);
+
+	void AddWeapon(class AAWeapon* Weapon);
+
+	void RemoveWeapon(class AAWeapon* Weapon, bool bDestroy);
+
+	class AAWeapon* CurrentWeapon;
+
+	class AAWeapon* PreviousWeapon;
+
+	UFUNCTION(BlueprintCallable, Category = "Animation")
+	void SwapToNewWeaponMesh();
 };

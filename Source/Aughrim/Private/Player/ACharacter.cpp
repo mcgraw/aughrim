@@ -191,3 +191,153 @@ void AACharacter::StopWeaponFire()
 {
 
 }
+
+AAWeapon* AACharacter::GetCurrentWeapon() const
+{
+	return CurrentWeapon;
+}
+
+bool AACharacter::WeaponSlotAvailable(EInventorySlot CheckSlot)
+{
+
+}
+
+bool AACharacter::CanFire() const
+{
+	/* Add more checks for non-shooting areas, or NPC dialogs */
+	return IsAlive();
+}
+
+bool AACharacter::CanReload() const
+{
+	return IsAlive();
+}
+
+bool AACharacter::IsFiring() const
+{
+	return CurrentWeapon && CurrentWeapon->GetCurrentState() == EWeaponState::Firing;
+}
+
+FName AACharacter::GetInventoryAttachPoint(EInventorySlot Slot) const
+{
+	switch (Slot)
+	{
+	case EInventorySlot::Hands:
+		return WeaponAttachPoint;
+	default:
+		return ""; // Not Implemented
+	}
+}
+
+void AACharacter::SetCurrentWeapon(class AAWeapon* NewWeapon, class AAWeapon* LastWeapon /*= nullptr*/)
+{
+	/* Maintain a reference for visual weapon swapping */
+	PreviousWeapon = LastWeapon;
+
+	AAWeapon* LocalLastWeapon = nullptr;
+	if (LastWeapon)
+	{
+		LocalLastWeapon = LastWeapon;
+	}
+	else if (NewWeapon != CurrentWeapon)
+	{
+		LocalLastWeapon = CurrentWeapon;
+	}
+
+	// UnEquip the current
+	bool bHasPreviousWeapon = false;
+	if (LocalLastWeapon)
+	{
+		LocalLastWeapon->OnUnEquip();
+		bHasPreviousWeapon = true;
+	}
+
+	CurrentWeapon = NewWeapon;
+
+	if (NewWeapon)
+	{
+		NewWeapon->SetOwningPawn(this);
+
+		NewWeapon->OnEquip(bHasPreviousWeapon);
+	}
+
+	/* No equip animation w/ animnotify? uncomment to immediately swap */
+	// SwapToNewWeaponMesh();
+}
+
+void AACharacter::EquipWeapon(AAWeapon* Weapon)
+{
+	if (Weapon)
+	{
+		/* Ignore if trying to equip already equipped weapon */
+		if (Weapon == CurrentWeapon)
+			return;
+
+		// ROLE_Authority check
+
+		SetCurrentWeapon(Weapon, CurrentWeapon);
+	}
+}
+
+void AACharacter::AddWeapon(class AAWeapon* Weapon)
+{
+	// ROLE_Authority check
+
+	if (Weapon)
+	{
+		Weapon->OnEnterInventory(this);
+		Inventory.AddUnique(Weapon);
+
+		// Equip first weapon in inventory
+		if (Inventory.Num() > 0 && CurrentWeapon == nullptr)
+		{
+			EquipWeapon(Inventory[0]);
+		}
+	}
+}
+
+void AACharacter::RemoveWeapon(class AAWeapon* Weapon, bool bDestroy)
+{
+	// ROLE_Authority check
+
+	if (Weapon)
+	{
+		bool bIsCurrent = CurrentWeapon == Weapon;
+
+		if (Inventory.Contains(Weapon))
+		{
+			Weapon->OnLeaveInventory();
+		}
+		Inventory.RemoveSingle(Weapon);
+
+		/* Replace weapon if we removed our current weapon */
+		if (bIsCurrent && Inventory.Num() > 0)
+		{
+			SetCurrentWeapon(Inventory[0]);
+		}
+
+		/* Clear reference to weapon if we have no items left in inventory */
+		if (Inventory.Num() == 0)
+		{
+			SetCurrentWeapon(nullptr);
+		}
+
+		if (bDestroy)
+		{
+			Weapon->Destroy();
+		}
+	}
+}
+
+void AACharacter::SwapToNewWeaponMesh()
+{
+	if (PreviousWeapon)
+	{
+		PreviousWeapon->AttachMeshToPawn(PreviousWeapon->GetStorageSlot());
+	}
+
+	if (CurrentWeapon)
+	{
+		CurrentWeapon->AttachMeshToPawn(EInventorySlot::Hands);
+	}
+}
