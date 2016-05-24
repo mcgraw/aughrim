@@ -2,6 +2,7 @@
 
 #include "Aughrim.h"
 #include "ACharacter.h"
+#include "AWeapon.h"
 #include "ACarryObjectComponent.h"
 
 AACharacter::AACharacter(const class FObjectInitializer& ObjectInitializer)

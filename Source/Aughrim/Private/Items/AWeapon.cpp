@@ -1,6 +1,7 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
 #include "Aughrim.h"
+#include "ACharacter.h"
 #include "AWeapon.h"
 
 
@@ -12,7 +13,7 @@ AAWeapon::AAWeapon(const class FObjectInitializer& ObjectInitializer)
 
 void AAWeapon::PostInitializeComponents()
 {
-
+	Super::PostInitializeComponents();
 }
 
 void AAWeapon::EndPlay(const EEndPlayReason::Type EndPlayReason)

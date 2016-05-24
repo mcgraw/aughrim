@@ -3,6 +3,7 @@
 #pragma once
 
 #include "GameFramework/Character.h"
+#include "ATypes.h"
 #include "ABaseCharacter.generated.h"
 
 UCLASS(ABSTRACT)

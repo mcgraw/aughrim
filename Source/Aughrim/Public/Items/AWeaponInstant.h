@@ -5,10 +5,7 @@
 #include "Items/AWeapon.h"
 #include "AWeaponInstant.generated.h"
 
-/**
- * 
- */
-UCLASS()
+UCLASS(Abstract)
 class AUGHRIM_API AAWeaponInstant : public AAWeapon
 {
 	GENERATED_BODY()
