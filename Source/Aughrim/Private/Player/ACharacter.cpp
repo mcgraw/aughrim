@@ -199,7 +199,7 @@ AAWeapon* AACharacter::GetCurrentWeapon() const
 
 bool AACharacter::WeaponSlotAvailable(EInventorySlot CheckSlot)
 {
-
+	return false;
 }
 
 bool AACharacter::CanFire() const

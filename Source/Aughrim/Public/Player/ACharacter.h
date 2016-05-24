@@ -4,6 +4,7 @@
 
 #include "Player/ABaseCharacter.h"
 #include "ATypes.h"
+#include "AWeapon.h"
 #include "ACharacter.generated.h"
 
 UCLASS()

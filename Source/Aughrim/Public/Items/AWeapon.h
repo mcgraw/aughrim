@@ -75,6 +75,8 @@ public:
 
 	virtual void OnUnEquip();
 
+	void OnEquip(bool bPlayAnimation);
+
 	/* Set the weapon's owning pawn */
 	void SetOwningPawn(AACharacter* NewOwner);
 
@@ -116,7 +118,7 @@ protected:
 	FHitResult WeaponTrace(const FVector& TraceFrom, const FVector& TraceTo) const;
 
 	/* With PURE_VIRTUAL we skip implementing the function in AWeapon.cpp and can do this in subclasses instead */
-	virtual void FireWeapon() PURE_VIRTUAL(AAWeapon::FireWeapon);
+	virtual void FireWeapon() PURE_VIRTUAL(AAWeapon::FireWeapon, );
 
 private:
 

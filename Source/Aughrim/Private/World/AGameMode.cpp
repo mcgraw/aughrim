@@ -72,7 +72,7 @@ void AAGameMode::SetPlayerDefaults(APawn* PlayerPawn)
 FString AAGameMode::InitNewPlayer(class APlayerController* NewPlayerController, const TSharedPtr<const FUniqueNetId>& UniqueId, const FString& Options, const FString& Portal /*= TEXT("")*/)
 {
 	FString Result = Super::InitNewPlayer(NewPlayerController, UniqueId, Options, Portal);
-	UE_LOG(LogTemp, Warning, TEXT("InitNewPlayer: %s"), Result);
+	UE_LOG(LogTemp, Warning, TEXT("InitNewPlayer: %s"), *Result);
 	return Result;
 }
 
