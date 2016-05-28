@@ -57,11 +57,13 @@ protected:
 	class AACharacter* MyPawn;
 
 	/* Weapon mesh; 3rd person view */
-	UPROPERTY(EditDefaultsOnly, Category = Mesh)
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	USkeletalMeshComponent* Mesh;
 
 	/* Detach weapon mesh from pawn */
 	void DetachMeshFromPawn();
+
+	virtual void OnEquipFinished();
 
 	bool IsEquipped() const;
 
@@ -94,7 +96,8 @@ public:
 	}
 
 	/* The class to spawn in the level when dropped */
-	// TODO
+	UPROPERTY(EditDefaultsOnly, Category = "Weapon")
+	TSubclassOf<class AAWeaponPickup> WeaponPickupClass;
 
 public:
 
@@ -113,7 +116,7 @@ protected:
 
 	FVector GetAdjustedAim() const;
 
-	FVector GetCameraDamageStartingLocation(const FVector& AimDir) const;
+	FVector GetCameraDamageStartLocation(const FVector& AimDir) const;
 
 	FHitResult WeaponTrace(const FVector& TraceFrom, const FVector& TraceTo) const;
 
