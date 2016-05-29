@@ -112,13 +112,27 @@ void AAGameMode::Killed(AController* Killer, AController* VictimPlayer, APawn* V
 
 }
 
-bool AAGameMode::CanDealDamage(class ASPlayerState* DamageCauser, class ASPlayerState* DamagedPlayer) const
+bool AAGameMode::CanDealDamage(class AAPlayerState* DamageCauser, class AAPlayerState* DamagedPlayer) const
 {
 	return true;
 }
 
 float AAGameMode::ModifyDamage(float Damage, AActor* DamagedActor, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) const
 {
-	return Damage;
+	float ActualDamage = Damage;
+
+	AABaseCharacter* DamagedPawn = Cast<AABaseCharacter>(DamagedActor);
+	if (DamagedPawn && EventInstigator)
+	{
+		AAPlayerState* DamagedPlayerState = Cast<AAPlayerState>(DamagedPawn->PlayerState);
+		AAPlayerState* InstigatorPlayerState = Cast<AAPlayerState>(EventInstigator->PlayerState);
+
+		/* Check for friendly fire */
+		if (!CanDealDamage(InstigatorPlayerState, DamagedPlayerState))
+		{
+			ActualDamage = 0.f;
+		}
+	}
+	return ActualDamage;
 }
 

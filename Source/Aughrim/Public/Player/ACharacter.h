@@ -59,12 +59,20 @@ public:
 
 	virtual void SetSprinting(bool NewSprinting) override;
 
+	/* Is character currently performing a jump action. Resets on landed. */
+	UPROPERTY(Transient, Replicated)
 	bool bIsJumping;
 
 	UFUNCTION(BlueprintCallable, Category = "Movement")
 	bool IsInitiatedJump() const;
 
 	void SetIsJumping(bool NewJumping);
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerSetIsJumping(bool NewJumping);
+	void ServerSetIsJumping_Implementation(bool NewJumping);
+	bool ServerSetIsJumping_Validate(bool NewJumping);
+
 
 	virtual void OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode = 0) override;
 

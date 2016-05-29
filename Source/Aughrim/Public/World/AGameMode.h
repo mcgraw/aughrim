@@ -59,7 +59,7 @@ public:
 
 	virtual void Killed(AController* Killer, AController* VictimPlayer, APawn* VictimPawn, const UDamageType* DamageType);
 
-	virtual bool CanDealDamage(class ASPlayerState* DamageCauser, class ASPlayerState* DamagedPlayer) const;
+	virtual bool CanDealDamage(class AAPlayerState* DamageCauser, class AAPlayerState* DamagedPlayer) const;
 
 	virtual float ModifyDamage(float Damage, AActor* DamagedActor, struct FDamageEvent const& DamageEvent, AController* EventInstigator, AActor* DamageCauser) const;
 

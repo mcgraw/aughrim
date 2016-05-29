@@ -3,6 +3,7 @@
 #include "Aughrim.h"
 #include "ACharacter.h"
 #include "AWeapon.h"
+#include "ABaseCharacter.h"
 #include "ACarryObjectComponent.h"
 
 AACharacter::AACharacter(const class FObjectInitializer& ObjectInitializer)
@@ -52,6 +53,11 @@ void AACharacter::BeginPlay()
 void AACharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+
+	if (bWantsToRun && !IsSprinting())
+	{
+		SetSprinting(true);
+	}
 }
 
 void AACharacter::SetupPlayerInputComponent(class UInputComponent* InputComponent)
@@ -65,8 +71,8 @@ void AACharacter::SetupPlayerInputComponent(class UInputComponent* InputComponen
 	InputComponent->BindAxis("LookUp", this, &APawn::AddControllerPitchInput);
 
 	// Sprint
-	InputComponent->BindAction("SprintHold", IE_Pressed, this, &AACharacter::OnStartSprinting);
-	InputComponent->BindAction("SprintHold", IE_Released, this, &AACharacter::OnStopSprinting);
+	InputComponent->BindAction("Sprint", IE_Pressed, this, &AACharacter::OnStartSprinting);
+	InputComponent->BindAction("Sprint", IE_Released, this, &AACharacter::OnStopSprinting);
 
 	// Crouch
 	// InputComponent->BindAction("CrouchToggle", IE_Released, this, &AACharacter::OnCrouchToggle);
@@ -116,6 +122,7 @@ void AACharacter::MoveRight(float Val)
 void AACharacter::OnStartJump()
 {
 	bPressedJump = true;
+
 	SetIsJumping(true);
 }
 
@@ -150,7 +157,25 @@ bool AACharacter::IsInitiatedJump() const
 
 void AACharacter::SetIsJumping(bool NewJumping)
 {
-	bIsJumping = NewJumping;
+	UE_LOG(LogTemp, Warning, TEXT("Set is jumping"))
+	// bIsJumping = NewJumping;
+
+// 	if (Role < ROLE_Authority)
+// 	{
+// 		ServerSetIsJumping(NewJumping);
+// 	}
+}
+
+void AACharacter::ServerSetIsJumping_Implementation(bool NewJumping)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Implementation"))
+	SetIsJumping(NewJumping);
+}
+
+bool AACharacter::ServerSetIsJumping_Validate(bool NewJumping)
+{
+	UE_LOG(LogTemp, Warning, TEXT("Validate"))
+	return true;
 }
 
 void AACharacter::OnMovementModeChanged(EMovementMode PrevMovementMode, uint8 PreviousCustomMode /*= 0*/)
@@ -361,4 +386,13 @@ void AACharacter::SwapToNewWeaponMesh()
 	{
 		CurrentWeapon->AttachMeshToPawn(EInventorySlot::Hands);
 	}
+}
+
+void AACharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	// Value is already updated locally, skip in replication step
+	DOREPLIFETIME_CONDITION(AACharacter, bIsJumping, COND_SkipOwner);
+
 }

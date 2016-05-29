@@ -11,7 +11,11 @@ float UACharacterMovementComponent::GetMaxSpeed() const
 	const AABaseCharacter* CharOwner = Cast<AABaseCharacter>(PawnOwner);
 	if (CharOwner)
 	{
-		// Slow down during targeting or crouching
+		if (CharOwner->IsSprinting())
+		{
+			MaxSpeed *= CharOwner->GetSprintingSpeedModifier();
+		}
 	}
+
 	return MaxSpeed;
 }
