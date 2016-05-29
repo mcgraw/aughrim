@@ -35,4 +35,14 @@ protected:
 	void RotateActorAroundPoint(AActor* RotateActor, FVector RotationPoint, FRotator AddRotation);
 
 	/// Explore picking up and dropping items
+
+public:
+
+	/* Is currently holding an Actor */
+	bool GetIsCarryingActor();
+
+	/* Rotate the carried Actor */
+	void Rotate(float DirectionYaw, float DirectionRoll);
+
+	// NET
 };

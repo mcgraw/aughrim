@@ -188,7 +188,8 @@ void AAWeapon::OnLeaveInventory()
 void AAWeapon::StartFire()
 {
 	// NET
-
+	UE_LOG(LogTemp, Warning, TEXT("START FIRE"));
+	
 	if (!bWantsToFire)
 	{
 		bWantsToFire = true;
@@ -330,22 +331,97 @@ void AAWeapon::DetermineWeaponState()
 
 void AAWeapon::HandleFiring()
 {
+	if (CurrentAmmoInClip > 0 && CanFire())
+	{
+		// NET
+		SimulateWeaponFire();
 
+		if (MyPawn && MyPawn->IsLocallyControlled())
+		{
+			FireWeapon();
+
+			UseAmmo();
+
+			BurstCounter++;
+		}
+	}
+	else if (CanReload())
+	{
+		StartReload();
+	}
+	else if (MyPawn && MyPawn->IsLocallyControlled())
+	{
+		if (GetCurrentAmmo() == 0 && !bRefiring)
+		{
+			PlayWeaponSound(OutOfAmmoSound);
+		}
+
+		/* Reload after firing last round */
+		if (CurrentAmmoInClip <= 0 && CanReload())
+		{
+			StartReload();
+		}
+
+		/* Stop weapon fire FX, but stay in firing state */
+		if (BurstCounter > 0)
+		{
+			OnBurstFinished();
+		}
+	}
+
+	if (MyPawn && MyPawn->IsLocallyControlled())
+	{
+		// NET
+
+		/* Retrigger HandleFiring on a delay for automatic weapons */
+		bRefiring = (CurrentState == EWeaponState::Firing && TimeBetweenShots > 0.0f);
+		if (bRefiring)
+		{
+			GetWorldTimerManager().SetTimer(TimerHandle_HandleFiring, this, &AAWeapon::HandleFiring, TimeBetweenShots, false);
+		}
+	}
+
+	LastFireTime = GetWorld()->GetTimeSeconds();
 }
 
 void AAWeapon::OnBurstStarted()
 {
-
+	// Start firing, can be delayed to satisfy TimeBetweenShots
+	const float GameTime = GetWorld()->GetTimeSeconds();
+	if (LastFireTime > 0 && TimeBetweenShots > 0.0f && LastFireTime + TimeBetweenShots > GameTime)
+	{
+		GetWorldTimerManager().SetTimer(TimerHandle_HandleFiring, this, &AAWeapon::HandleFiring, LastFireTime + TimeBetweenShots - GameTime, false);
+	}
+	else
+	{
+		HandleFiring();
+	}
 }
 
 void AAWeapon::OnBurstFinished()
 {
+	BurstCounter = 0;
 
+	StopSimulatingWeaponFire();
+
+	GetWorldTimerManager().ClearTimer(TimerHandle_HandleFiring);
+	bRefiring = false;
 }
 
 void AAWeapon::SimulateWeaponFire()
 {
+	if (MuzzleFX)
+	{
+		MuzzlePSC = UGameplayStatics::SpawnEmitterAttached(MuzzleFX, Mesh, MuzzleAttachPoint);
+	}
 
+	if (!bPlayingFireAnim)
+	{
+		PlayWeaponAnimation(FireAnim);
+		bPlayingFireAnim = true;
+	}
+
+	PlayWeaponSound(FireSound);
 }
 
 void AAWeapon::StopSimulatingWeaponFire()
@@ -365,6 +441,7 @@ FVector AAWeapon::GetMuzzleDirection() const
 
 UAudioComponent* AAWeapon::PlayWeaponSound(USoundCue* SoundToPlay)
 {
+	UE_LOG(LogTemp, Warning, TEXT("PLAY SOUND"));
 	UAudioComponent* AC = nullptr;
 	if (SoundToPlay && MyPawn)
 	{

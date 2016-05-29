@@ -175,22 +175,42 @@ void AACharacter::OnReload()
 
 void AACharacter::OnStartFire()
 {
+	if (CarriedObjectComp->GetIsCarryingActor())
+	{
+		CarriedObjectComp->Rotate(1.0f, 1.0f);
+		return;
+	}
 
+	StartWeaponFire();
 }
 
 void AACharacter::OnStopFire()
 {
-
+	StopWeaponFire();
 }
 
 void AACharacter::StartWeaponFire()
 {
-
+	if (!bWantsToFire)
+	{
+		bWantsToFire = true;
+		if (CurrentWeapon)
+		{
+			CurrentWeapon->StartFire();
+		}
+	}
 }
 
 void AACharacter::StopWeaponFire()
 {
-
+	if (bWantsToFire)
+	{
+		bWantsToFire = false;
+		if (CurrentWeapon)
+		{
+			CurrentWeapon->StopFire();
+		}
+	}
 }
 
 AAWeapon* AACharacter::GetCurrentWeapon() const
