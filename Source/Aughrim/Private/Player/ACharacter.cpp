@@ -325,6 +325,21 @@ void AACharacter::EquipWeapon(AAWeapon* Weapon)
 	}
 }
 
+void AACharacter::ServerEquipWeapon_Implementation(AAWeapon* Weapon)
+{
+	EquipWeapon(Weapon);
+}
+
+bool AACharacter::ServerEquipWeapon_Validate(AAWeapon* Weapon)
+{
+	return true;
+}
+
+void AACharacter::OnRep_CurrentWeapon(AAWeapon* LastWeapon)
+{
+	SetCurrentWeapon(CurrentWeapon, LastWeapon);
+}
+
 void AACharacter::AddWeapon(class AAWeapon* Weapon)
 {
 	// ROLE_Authority check
@@ -395,4 +410,9 @@ void AACharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifet
 	// Value is already updated locally, skip in replication step
 	DOREPLIFETIME_CONDITION(AACharacter, bIsJumping, COND_SkipOwner);
 
+	// Replicate to every client
+	DOREPLIFETIME(AACharacter, LastTakeHitInfo);
+
+	DOREPLIFETIME(AACharacter, CurrentWeapon);
+	DOREPLIFETIME(AACharacter, Inventory);
 }

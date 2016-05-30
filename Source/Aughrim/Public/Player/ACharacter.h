@@ -127,16 +127,27 @@ public:
 	FName GetInventoryAttachPoint(EInventorySlot Slot) const;
 
 	/* All weapons/items the player currently holds */
+	UPROPERTY(Transient, Replicated)
 	TArray<AAWeapon*> Inventory;
 
 	void SetCurrentWeapon(class AAWeapon* NewWeapon, class AAWeapon* LastWeapon = nullptr);
 
 	void EquipWeapon(AAWeapon* Weapon);
 
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerEquipWeapon(AAWeapon* Weapon);
+	void ServerEquipWeapon_Implementation(AAWeapon* Weapon);
+	bool ServerEquipWeapon_Validate(AAWeapon* Weapon);
+	
+	/* OnRep func can use a param to hold the previous value of the variable. Very useful when you need to handle UnEquip */
+	UFUNCTION()
+	void OnRep_CurrentWeapon(AAWeapon* LastWeapon);
+
 	void AddWeapon(class AAWeapon* Weapon);
 
 	void RemoveWeapon(class AAWeapon* Weapon, bool bDestroy);
 
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_CurrentWeapon)
 	class AAWeapon* CurrentWeapon;
 
 	class AAWeapon* PreviousWeapon;

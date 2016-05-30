@@ -70,7 +70,7 @@ protected:
 	
 protected:
 
-	UPROPERTY(EditDefaultsOnly, Category = "PlayerCondition")
+	UPROPERTY(EditDefaultsOnly, Category = "PlayerCondition", Replicated)
 	float Health;
 
 	virtual float TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser) override;
@@ -79,7 +79,7 @@ protected:
 
 	virtual bool Die(float KillingDamage, FDamageEvent const& DamageEvent, AController* Killer, AActor* DamageCauser);
 
-	virtual void OnDeath(float KillingDamage, FDamageEvent const& DamageEvent, AController* Killer, AActor* DamageCauser);
+	virtual void OnDeath(float KillingDamage, FDamageEvent const& DamageEvent, APawn* PawnInstigator, AActor* DamageCauser);
 
 	virtual void FellOutOfWorld(const class UDamageType& DmgType) override;
 

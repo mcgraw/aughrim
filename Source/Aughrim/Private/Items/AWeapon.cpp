@@ -25,6 +25,12 @@ AAWeapon::AAWeapon(const class FObjectInitializer& ObjectInitializer)
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.TickGroup = TG_PrePhysics;
 
+	SetReplicates(true);
+	bNetUseOwnerRelevancy = true;
+
+	MuzzleAttachPoint = TEXT("MuzzleFlashSocket");
+	StorageSlot = EInventorySlot::Primary;
+
 	ShotsPerMinute = 700;
 	StartAmmo = 999;
 	MaxAmmo = 999;
@@ -58,6 +64,11 @@ float AAWeapon::GetEquipStartedTime() const
 float AAWeapon::GetEquipDuration() const
 {
 	return EquipDuration;
+}
+
+void AAWeapon::OnRep_MyPawn()
+{
+
 }
 
 void AAWeapon::DetachMeshFromPawn()
@@ -187,8 +198,10 @@ void AAWeapon::OnLeaveInventory()
 
 void AAWeapon::StartFire()
 {
-	// NET
-	UE_LOG(LogTemp, Warning, TEXT("START FIRE"));
+	if (Role < ROLE_Authority)
+	{
+		ServerStartFire();
+	}
 	
 	if (!bWantsToFire)
 	{
@@ -199,7 +212,10 @@ void AAWeapon::StartFire()
 
 void AAWeapon::StopFire()
 {
-	// NET
+	if (Role < ROLE_Authority)
+	{
+		ServerStopFire();
+	}
 
 	if (bWantsToFire)
 	{
@@ -333,8 +349,10 @@ void AAWeapon::HandleFiring()
 {
 	if (CurrentAmmoInClip > 0 && CanFire())
 	{
-		// NET
-		SimulateWeaponFire();
+		if (GetNetMode() != NM_DedicatedServer)
+		{
+			SimulateWeaponFire();
+		}
 
 		if (MyPawn && MyPawn->IsLocallyControlled())
 		{
@@ -371,7 +389,10 @@ void AAWeapon::HandleFiring()
 
 	if (MyPawn && MyPawn->IsLocallyControlled())
 	{
-		// NET
+		if (Role < ROLE_Authority)
+		{
+			ServerHandleFiring();
+		}
 
 		/* Retrigger HandleFiring on a delay for automatic weapons */
 		bRefiring = (CurrentState == EWeaponState::Firing && TimeBetweenShots > 0.0f);
@@ -382,6 +403,45 @@ void AAWeapon::HandleFiring()
 	}
 
 	LastFireTime = GetWorld()->GetTimeSeconds();
+}
+
+void AAWeapon::ServerStartFire_Implementation()
+{
+	StartFire();
+}
+
+bool AAWeapon::ServerStartFire_Validate()
+{
+	return true;
+}
+
+void AAWeapon::ServerStopFire_Implementation()
+{
+	StopFire();
+}
+
+bool AAWeapon::ServerStopFire_Validate()
+{
+	return true;
+}
+
+void AAWeapon::ServerHandleFiring_Implementation()
+{
+	const bool bShouldUpdateAmmo = (CurrentAmmoInClip > 0 && CanFire());
+
+	HandleFiring();
+
+	if (bShouldUpdateAmmo)
+	{
+		UseAmmo();
+
+		BurstCounter++;
+	}
+}
+
+bool AAWeapon::ServerHandleFiring_Validate()
+{
+	return true;
 }
 
 void AAWeapon::OnBurstStarted()
@@ -406,6 +466,18 @@ void AAWeapon::OnBurstFinished()
 
 	GetWorldTimerManager().ClearTimer(TimerHandle_HandleFiring);
 	bRefiring = false;
+}
+
+void AAWeapon::OnRep_BurstCounter()
+{
+	if (BurstCounter > 0)
+	{
+		SimulateWeaponFire();
+	}
+	else
+	{
+		StopSimulatingWeaponFire();
+	}
 }
 
 void AAWeapon::SimulateWeaponFire()
@@ -475,6 +547,19 @@ bool AAWeapon::CanReload()
 	return false;
 }
 
+void AAWeapon::OnRep_Reload()
+{
+	if (bPendingReload)
+	{
+		/* By passing true we do not push back to server and execute it locally */
+		StartReload(true);
+	}
+	else
+	{
+		StopSimulateReload();
+	}
+}
+
 void AAWeapon::StartReload(bool bFromReplication /*= false*/)
 {
 
@@ -513,4 +598,16 @@ int32 AAWeapon::GetMaxAmmoPerClip() const
 int32 AAWeapon::GetMaxAmmo() const
 {
 	return MaxAmmo;
+}
+
+void AAWeapon::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AAWeapon, MyPawn);
+
+	DOREPLIFETIME_CONDITION(AAWeapon, CurrentAmmo, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(AAWeapon, CurrentAmmoInClip, COND_OwnerOnly);
+	DOREPLIFETIME_CONDITION(AAWeapon, BurstCounter, COND_SkipOwner);
+	DOREPLIFETIME_CONDITION(AAWeapon, bPendingReload, COND_SkipOwner);
 }

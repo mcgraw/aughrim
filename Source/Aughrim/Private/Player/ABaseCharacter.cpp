@@ -73,6 +73,7 @@ bool AABaseCharacter::ServerSetSprinting_Validate(bool NewSprinting)
 
 float AABaseCharacter::TakeDamage(float Damage, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, class AActor* DamageCauser)
 {
+	UE_LOG(LogTemp, Warning, TEXT("TAKE DAMAGE"))
 	if (Health <= 0.0f)
 	{
 		return 0.f;
@@ -99,7 +100,7 @@ float AABaseCharacter::TakeDamage(float Damage, struct FDamageEvent const& Damag
 
 			if (bCanDie)
 			{
-				// Die!
+				Die(ActualDamage, DamageEvent, EventInstigator, DamageCauser);
 			}
 			else
 			{
@@ -114,7 +115,7 @@ float AABaseCharacter::TakeDamage(float Damage, struct FDamageEvent const& Damag
 		}
 
 	}
-	return 10.0f;
+	return ActualDamage;
 }
 
 bool AABaseCharacter::CanDie(float KillingDamage, FDamageEvent const& DamageEvent, AController* Killer, AActor* DamageCauser) const
@@ -138,6 +139,8 @@ bool AABaseCharacter::Die(float KillingDamage, FDamageEvent const& DamageEvent, 
 		return false;
 	}
 
+	UE_LOG(LogTemp, Warning, TEXT("Should die"))
+
 	Health = FMath::Min(0.0f, Health);
 
 	/* Fallback to default DamageType if none is specified */
@@ -146,15 +149,56 @@ bool AABaseCharacter::Die(float KillingDamage, FDamageEvent const& DamageEvent, 
 
 	/* Notify the gamemode we got killed for scoring and game over state */
 	AController* KilledPlayer = Controller ? Controller : Cast<AController>(GetOwner());
-	GetWorld().GetAuthGameMode<AAGameMode>()->Killed(Killer, KilledPlayer, this, DamageType);
+	GetWorld()->GetAuthGameMode<AAGameMode>()->Killed(Killer, KilledPlayer, this, DamageType);
 
 	OnDeath(KillingDamage, DamageEvent, Killer ? Killer->GetPawn() : NULL, DamageCauser);
 	return true;
 }
 
-void AABaseCharacter::OnDeath(float KillingDamage, FDamageEvent const& DamageEvent, AController* Killer, AActor* DamageCauser)
+void AABaseCharacter::OnDeath(float KillingDamage, FDamageEvent const& DamageEvent, APawn* PawnInstigator, AActor* DamageCauser)
 {
+	if (bIsDying)
+	{
+		return;
+	}
 
+	bReplicateMovement = false;
+	bTearOff = true;
+	bIsDying = true;
+
+	PlayHit(KillingDamage, DamageEvent, PawnInstigator, DamageCauser, true);
+
+	DetachFromControllerPendingDestroy();
+
+	/* Disable all collision on capsule */
+	UCapsuleComponent* CapsuleComp = GetCapsuleComponent();
+	CapsuleComp->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CapsuleComp->SetCollisionResponseToAllChannels(ECR_Ignore);
+
+	USkeletalMeshComponent* Mesh3P = GetMesh();
+	if (Mesh3P)
+	{
+		Mesh3P->SetCollisionProfileName(TEXT("Ragdoll"));
+	}
+	SetActorEnableCollision(true);
+
+	SetRagdollPhysics();
+
+	/* Apply physics impulse on the bone of the enemy skeleton mesh we hit */
+	if (DamageEvent.IsOfType(FPointDamageEvent::ClassID))
+	{
+		FPointDamageEvent PointDmg = *((FPointDamageEvent*)(&DamageEvent));
+		{
+			Mesh3P->AddImpulseAtLocation(PointDmg.ShotDirection * 12000, PointDmg.HitInfo.ImpactPoint, PointDmg.HitInfo.BoneName);
+		}
+	}
+	if (DamageEvent.IsOfType(FRadialDamageEvent::ClassID))
+	{
+		FRadialDamageEvent RadialDmg = *((FRadialDamageEvent*)(&DamageEvent));
+		{
+			Mesh3P->AddRadialImpulse(RadialDmg.Origin, RadialDmg.Params.GetMaxRadius(), 10000 /* RadialDmg.DamageTypeClass->DamageImpuse */, ERadialImpulseFalloff::RIF_Linear);
+		}
+	}
 }
 
 void AABaseCharacter::FellOutOfWorld(const class UDamageType& DmgType)
@@ -164,7 +208,46 @@ void AABaseCharacter::FellOutOfWorld(const class UDamageType& DmgType)
 
 void AABaseCharacter::SetRagdollPhysics()
 {
+	bool bInRagdoll = false;
+	USkeletalMeshComponent* Mesh3P = GetMesh();
 
+	if (IsPendingKill())
+	{
+		bInRagdoll = false;
+	}
+	else if (!Mesh3P || !Mesh3P->GetPhysicsAsset())
+	{
+		bInRagdoll = false;
+	}
+	else
+	{
+		Mesh3P->SetAllBodiesSimulatePhysics(true);
+		Mesh3P->SetSimulatePhysics(true);
+		Mesh3P->WakeAllRigidBodies();
+		Mesh3P->bBlendPhysics = true;
+
+		bInRagdoll = true;
+	}
+
+	UCharacterMovementComponent* CharacterComp = Cast<UCharacterMovementComponent>(GetMovementComponent());
+	if (CharacterComp)
+	{
+		CharacterComp->StopMovementImmediately();
+		CharacterComp->DisableMovement();
+		CharacterComp->SetComponentTickEnabled(false);
+	}
+
+	if (!bInRagdoll)
+	{
+		// Immediately hide the pawn
+		TurnOff();
+		SetActorHiddenInGame(true);
+		SetLifeSpan(1.0f);
+	}
+	else
+	{
+		SetLifeSpan(10.0f);
+	}
 }
 
 void AABaseCharacter::PlayHit(float DamageTaken, struct FDamageEvent const& DamageEvent, APawn* PawnInstigator, AActor* DamageCauser, bool bKilled)
@@ -189,12 +272,41 @@ void AABaseCharacter::PlayHit(float DamageTaken, struct FDamageEvent const& Dama
 
 void AABaseCharacter::ReplicatedHit(float DamageTaken, struct FDamageEvent const& DamageEvent, APawn* PawnInstigator, AActor* DamageCauser, bool bKilled)
 {
+	const float TimeoutTime = GetWorld()->GetTimeSeconds() + 0.5f;
 
+	FDamageEvent const& LastDamageEvent = LastTakeHitInfo.GetDamageEvent();
+	if (PawnInstigator == LastTakeHitInfo.PawnInstigator.Get() && LastDamageEvent.DamageTypeClass == LastTakeHitInfo.DamageTypeClass)
+	{
+		// Same frame damage
+		if (bKilled && LastTakeHitInfo.bKilled)
+		{
+			// Redundant death take hit, ignore it
+			return;
+		}
+
+		DamageTaken += LastTakeHitInfo.ActualDamage;
+	}
+
+	LastTakeHitInfo.ActualDamage = DamageTaken;
+	LastTakeHitInfo.PawnInstigator = Cast<AABaseCharacter>(PawnInstigator);
+	LastTakeHitInfo.DamageCauser = DamageCauser;
+	LastTakeHitInfo.SetDamageEvent(DamageEvent);
+	LastTakeHitInfo.bKilled = bKilled;
+	LastTakeHitInfo.EnsureReplication();
 }
 
 void AABaseCharacter::OnRep_LastTakeHitInfo()
 {
+	UE_LOG(LogTemp, Warning, TEXT("OnRep_LastTakeHitInfo"))
 
+	if (LastTakeHitInfo.bKilled)
+	{
+		OnDeath(LastTakeHitInfo.ActualDamage, LastTakeHitInfo.GetDamageEvent(), LastTakeHitInfo.PawnInstigator.Get(), LastTakeHitInfo.DamageCauser.Get());
+	}
+	else
+	{
+		PlayHit(LastTakeHitInfo.ActualDamage, LastTakeHitInfo.GetDamageEvent(), LastTakeHitInfo.PawnInstigator.Get(), LastTakeHitInfo.DamageCauser.Get(), LastTakeHitInfo.bKilled);
+	}
 }
 
 void AABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -203,4 +315,8 @@ void AABaseCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 
 	// Value is already updated locally, skip in replication step
 	DOREPLIFETIME_CONDITION(AABaseCharacter, bWantsToRun, COND_SkipOwner);
+
+	// Replicate to every client, no special condition required
+	DOREPLIFETIME(AABaseCharacter, Health);
+	DOREPLIFETIME(AABaseCharacter, LastTakeHitInfo);
 }

@@ -54,11 +54,15 @@ protected:
 	EInventorySlot StorageSlot;
 
 	/* Pawn owner */
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_MyPawn)
 	class AACharacter* MyPawn;
 
 	/* Weapon mesh; 3rd person view */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	USkeletalMeshComponent* Mesh;
+
+	UFUNCTION()
+	void OnRep_MyPawn();
 
 	/* Detach weapon mesh from pawn */
 	void DetachMeshFromPawn();
@@ -131,7 +135,20 @@ private:
 
 	virtual void HandleFiring();
 
-	// Validations
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerStartFire();
+	void ServerStartFire_Implementation();
+	bool ServerStartFire_Validate();
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerStopFire();
+	void ServerStopFire_Implementation();
+	bool ServerStopFire_Validate();
+
+	UFUNCTION(Reliable, Server, WithValidation)
+	void ServerHandleFiring();
+	void ServerHandleFiring_Implementation();
+	bool ServerHandleFiring_Validate();
 
 	void OnBurstStarted();
 
@@ -153,6 +170,9 @@ private:
 	/************************************************************************/
 
 private:
+
+	UFUNCTION()
+	void OnRep_BurstCounter();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Sounds")
 	USoundCue* FireSound;
@@ -176,6 +196,7 @@ private:
 
 	bool bPlayingFireAnim;
 
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_BurstCounter)
 	int32 BurstCounter;
 
 protected:
@@ -217,12 +238,15 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Animation")
 	float NoEquipAnimDuration;
 
+	UPROPERTY(Transient, ReplicatedUsing = OnRep_Reload)
 	bool bPendingReload;
 
 	void UseAmmo();
 
+	UPROPERTY(Transient, Replicated)
 	int32 CurrentAmmo;
 
+	UPROPERTY(Transient, Replicated)
 	int32 CurrentAmmoInClip;
 
 	/* Weapon ammo on spawn */
@@ -245,6 +269,9 @@ protected:
 
 	/* Is weapon and character currently capable of starting a reload */
 	bool CanReload();
+
+	UFUNCTION()
+	void OnRep_Reload();
 
 public:
 
