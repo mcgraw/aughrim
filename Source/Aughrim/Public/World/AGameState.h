@@ -9,5 +9,9 @@ UCLASS()
 class AUGHRIM_API AAGameState : public AGameState
 {
 	GENERATED_BODY()
+
+public:
+
+	AAGameState(const class FObjectInitializer& ObjectInitializer);
 		
 };

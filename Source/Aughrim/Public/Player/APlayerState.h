@@ -12,20 +12,30 @@ class AUGHRIM_API AAPlayerState : public APlayerState
 
 	AAPlayerState(const class FObjectInitializer& ObjectInitializer);
 	
-	int32 NumKills;
+	UPROPERTY(Transient, Replicated)
+	int32 NumPlayerKills;
 
+	UPROPERTY(Transient, Replicated)
+	int32 NumBotKills;
+
+	UPROPERTY(Transient, Replicated)
 	int32 NumDeaths;
-
+	
 	virtual void Reset() override;
 
 public:
 
-	void AddKill();
+	void AddPlayerKill();
+
+	void AddBotKill();
 
 	void AddDeath();
 
 	UFUNCTION(BlueprintCallable, Category = "Score")
-	int32 GetKills() const;
+	int32 GetPlayerKills() const;
+
+	UFUNCTION(BlueprintCallable, Category = "Score")
+	int32 GetBotKills() const;
 
 	UFUNCTION(BlueprintCallable, Category = "Score")
 	int32 GetDeaths() const;

@@ -4,5 +4,8 @@
 #include "AGameState.h"
 
 
+AAGameState::AAGameState(const class FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
 
-
+}

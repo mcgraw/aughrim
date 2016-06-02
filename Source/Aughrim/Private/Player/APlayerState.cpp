@@ -14,13 +14,19 @@ void AAPlayerState::Reset()
 {
 	Super::Reset();
 
-	NumKills = 0;
+	NumPlayerKills = 0;
+	NumBotKills = 0;
 	NumDeaths = 0;
 }
 
-void AAPlayerState::AddKill()
+void AAPlayerState::AddPlayerKill()
 {
-	NumKills++;
+	NumPlayerKills++;
+}
+
+void AAPlayerState::AddBotKill()
+{
+	NumBotKills++;
 }
 
 void AAPlayerState::AddDeath()
@@ -28,12 +34,27 @@ void AAPlayerState::AddDeath()
 	NumDeaths++;
 }
 
-int32 AAPlayerState::GetKills() const
+int32 AAPlayerState::GetPlayerKills() const
+{ 
+	return NumPlayerKills;
+}
+
+int32 AAPlayerState::GetBotKills() const
 {
-	return NumKills;
+	return NumBotKills;
 }
 
 int32 AAPlayerState::GetDeaths() const
 {
 	return NumDeaths;
+}
+
+void AAPlayerState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(AAPlayerState, NumPlayerKills);
+	DOREPLIFETIME(AAPlayerState, NumBotKills);
+	DOREPLIFETIME(AAPlayerState, NumDeaths);
+
 }

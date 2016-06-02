@@ -15,11 +15,20 @@ class AUGHRIM_API AABattleArenaGameMode : public AAGameMode
 	/* End match when last man is standing */
 	void CheckMatchEnd();
 
+	/* Begin a new match */
+	void BeginNextMatch();
+
 	/* End the match */
 	void FinishMatch();
 
 	/* Spawn the player */
 	virtual void RestartPlayer(class AController* NewPlayer) override;
 		
-	
+	virtual void Killed(AController* Killer, AController* VictimPlayer, APawn* VictimPawn, const UDamageType* DamageType) override;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+	int32 MaxBattleRounds;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Gameplay")
+	int32 CurrentBattleRound;
 };

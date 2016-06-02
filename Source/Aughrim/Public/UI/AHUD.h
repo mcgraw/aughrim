@@ -10,6 +10,7 @@ enum class EHUDState : uint8
 {
 	Playing,
 	Spectating,
+	Summary,
 	MatchEnd
 };
 
